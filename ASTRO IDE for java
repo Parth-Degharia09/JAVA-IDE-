@@ -1,0 +1,128 @@
+import javax.swing.JFrame; //swing is used for ide  jframe is for adding a frame 
+import javax.swing.JTextArea;
+import javax.swing.JButton;
+import javax.swing.JPanel; 
+import javax.swing.JFileChooser;
+import javax.swing.JSplitPane;
+
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+
+import java.io.File; //file object represent a file and folder on acomputer
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.file.Files; // provides reading and writing on file
+public class Main{
+    public static void main(String[] args) { 
+        JFrame window = new JFrame("ASTRO"); //creates the window
+        //editor
+        JTextArea editor = new JTextArea();
+        editor.setBackground(java.awt.Color.BLACK);   // background black
+        editor.setForeground(java.awt.Color.WHITE);   // text white
+        //console
+        JTextArea console = new JTextArea();
+        //console is read only no editing 
+        console.setEditable(false);
+        console.setBackground(java.awt.Color.BLACK);  // background black
+        console.setForeground(java.awt.Color.GREEN);  // text green for console output
+        //buttons
+          JButton newButton = new JButton("New");//this makes a button 
+          JButton openButton= new JButton("Open");
+          JButton runButton = new JButton("Run");
+          JButton saveButton = new JButton("save");
+          final File[] currentFile ={null};
+        JPanel toolbar = new JPanel(); // makes a panel for buttons to stay there
+          toolbar.add(newButton);
+          toolbar.add(openButton);// adds button to the panel or toolbar
+          toolbar.add(runButton);
+          toolbar.add(saveButton);
+          //new button creating 
+        newButton.addActionListener(e -> {editor.setText("");}); // use to tell the compiler to listen to the button new button is created
+        // open button creating
+        openButton.addActionListener(e -> {
+          JFileChooser chooser = new JFileChooser(); //oen the window to let us see chose a file
+          int result = chooser.showOpenDialog(window); //let us choose the file
+          if (result == JFileChooser.APPROVE_OPTION) { // checks if the the file exist or not 
+            File file = chooser.getSelectedFile();
+            currentFile[0]=file;
+            try {
+              String text = Files.readString(file.toPath());
+              editor.setText(text);
+            } catch (Exception ex){ 
+              ex.printStackTrace();// trace the error if something went wrong 
+            }
+          }
+        });
+        //save button
+        saveButton.addActionListener(e ->{
+        JFileChooser chooser = new JFileChooser();
+        int result = chooser.showOpenDialog(window);
+        if (result == JFileChooser.APPROVE_OPTION){
+          File file = chooser.getSelectedFile();
+          currentFile[0]=file;
+          try{
+            Files.writeString(file.toPath(),editor.getText());
+          }
+          catch (Exception ex){
+            ex.printStackTrace();
+          }
+        }
+        });
+        //run and compile button
+        
+        runButton.addActionListener(e -> {
+    if (currentFile[0] == null) {
+        console.setText("Please save the Java file first");
+        return;
+    }
+
+    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    if (compiler == null) {
+        console.setText("Java compiler not found. Please install JDK.");
+        return;
+    }
+
+    int result = compiler.run(null, null, null, currentFile[0].getPath());
+
+    if (result == 0) {
+        console.setText("Compilation is complete\n");
+    
+        try {
+          File Folder = currentFile[0].getParentFile();
+          String className= currentFile[0].getName().replace(".java","");
+         
+          ProcessBuilder processBuilder= new ProcessBuilder("java",className);
+          processBuilder.directory(Folder);
+          Process process = processBuilder.start();
+          BufferedReader reader =new BufferedReader(new InputStreamReader( process.getInputStream()));
+          StringBuilder output =new StringBuilder();
+          String line;
+          while((line = reader.readLine()) !=null){
+            output.append(line).append("\n");
+          }
+          console.append(output.toString());
+        }
+        
+        catch(Exception ex){
+          console.append("Error running program: "+ ex.getMessage());
+        }
+      }else {
+          console.setText("Compilation failed\n");
+        }
+          
+        });
+    
+
+
+        //split pane
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,editor,console);
+          splitPane.setDividerLocation(450);
+        
+        window.add(toolbar,"North"); // tells where to place the toolbaar in north side 
+        window.add(splitPane,"Center");  // editor in centre 
+        window.setSize(900, 600); // sets it width and height
+        window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // this mean a program should stop of you save the window
+        window.setVisible(true);// makes window visible  
+    }
+}
+
